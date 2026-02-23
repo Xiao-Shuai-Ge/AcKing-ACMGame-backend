@@ -24,5 +24,11 @@ database:
   # use dsn
   dsn: root:123456@tcp(localhost:3307)/island?charset=utf8mb4&parseTime=True&loc=Local&timeout=1000ms
 
+email:
+  host: smtp.163.com
+  port: 25
+  username: ***.com
+  password: ***
+
 jwt:
   secret: your-secret

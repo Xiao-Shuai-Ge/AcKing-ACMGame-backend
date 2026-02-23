@@ -2,10 +2,18 @@ package types
 
 type RegisterReq struct {
 	Email     string `json:"email" form:"email"`
+	Code      string `json:"code" form:"code"`
 	Password  string `json:"password" form:"password"`
 	Username  string `json:"username" form:"username"`
 	AvatarUrl string `json:"avatar_url" form:"avatar_url"`
 	Rating    int    `json:"rating" form:"rating"`
+}
+
+type SendCodeReq struct {
+	Email string `json:"email" form:"email"`
+}
+
+type SendCodeResp struct {
 }
 
 type LoginReq struct {

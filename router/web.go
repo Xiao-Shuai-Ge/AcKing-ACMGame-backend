@@ -45,6 +45,7 @@ func registerRoutes(routeManager *manager.RouteManager) {
 	})
 
 	routeManager.RegisterLoginRoutes(func(rg *gin.RouterGroup) {
+		rg.POST("/send-code", middleware.Limiter(rate.Every(time.Minute), 4), api.SendCode)
 		rg.POST("/register", middleware.Limiter(rate.Every(time.Minute), 5), api.Register)
 		rg.POST("/login", middleware.Limiter(rate.Every(time.Minute), 10), api.Login)
 	})

@@ -27,6 +27,7 @@ var (
 	SNOWFLAKE_ID_GENERATE_ERROR = MsgCode{60003, "snowflake id生成失败"}
 	DATABASE_ERROR              = MsgCode{60004, "数据库错误"}
 	REDIS_ERROR                 = MsgCode{60005, "redis错误"}
+	EMAIL_SEND_ERROR            = MsgCode{60006, "邮件发送失败"}
 
 	/* 参数错误：10000 ~ 19999 */
 	PARAM_NOT_VALID    = MsgCode{10001, "参数无效"}
@@ -36,6 +37,8 @@ var (
 	MEMBER_NOT_EXIST   = MsgCode{10005, "用户不存在"}
 	MESSAGE_NOT_EXIST  = MsgCode{10006, "消息不存在"}
 	PASSWORD_ERROR     = MsgCode{10007, "密码错误"}
+	EMAIL_NOT_VALID    = MsgCode{10008, "邮箱格式错误"}
+	VERIFY_CODE_VALID  = MsgCode{10009, "验证码无效"}
 
 	/* 用户错误 20000 ~ 29999 */
 	USER_NOT_LOGIN      = MsgCode{20001, "用户未登录"}

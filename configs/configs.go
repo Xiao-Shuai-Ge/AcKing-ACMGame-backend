@@ -7,6 +7,7 @@ type Config struct {
 	Log   LoggerConfig      `mapstructure:"log"`
 	DB    DBConfig          `mapstructure:"database"`
 	Redis RedisConfig       `mapstructure:"redis"`
+	Email EmailConfig       `mapstructure:"email"`
 	JWT   JWTConfig         `mapstructure:"jwt"`
 }
 
@@ -34,6 +35,13 @@ type RedisConfig struct {
 	Port     int    `mapstructure:"port"`
 	Password string `mapstructure:"password"`
 	DB       int    `mapstructure:"db"`
+}
+
+type EmailConfig struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	UserName string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }
 
 type KafkaConfig struct {

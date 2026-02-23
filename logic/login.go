@@ -3,13 +3,18 @@ package logic
 import (
 	"context"
 	"errors"
+	"fmt"
+	"math/rand"
+	"regexp"
 	"tgwp/global"
 	"tgwp/log/zlog"
 	"tgwp/model"
 	"tgwp/repo"
 	"tgwp/response"
 	"tgwp/types"
+	"tgwp/utils/email"
 	"tgwp/utils/jwtUtils"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -18,13 +23,55 @@ import (
 type LoginLogic struct {
 }
 
+const (
+	EMAIL_REGEX      = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+	REDIS_EMAIL_CODE = "login:email:%s:code"
+)
+
 func NewLoginLogic() *LoginLogic {
 	return &LoginLogic{}
 }
 
-func (l *LoginLogic) Register(ctx context.Context, req types.RegisterReq) (resp types.LoginResp, err error) {
-	if req.Email == "" || req.Password == "" || req.Username == "" {
+func (l *LoginLogic) SendCode(ctx context.Context, req types.SendCodeReq) (resp types.SendCodeResp, err error) {
+	if req.Email == "" {
 		return resp, response.ErrResp(errors.New("param blank"), response.PARAM_NOT_COMPLETE)
+	}
+	re := regexp.MustCompile(EMAIL_REGEX)
+	if isMatch := re.MatchString(req.Email); !isMatch {
+		return resp, response.ErrResp(err, response.EMAIL_NOT_VALID)
+	}
+	if global.Rdb == nil {
+		return resp, response.ErrResp(errors.New("redis not init"), response.REDIS_ERROR)
+	}
+	code := rand.Intn(1000000)
+	err = global.Rdb.Set(ctx, fmt.Sprintf(REDIS_EMAIL_CODE, req.Email), code, 5*time.Minute).Err()
+	if err != nil {
+		return resp, response.ErrResp(err, response.REDIS_ERROR)
+	}
+	err = email.SendCode(req.Email, int64(code))
+	if err != nil {
+		return resp, response.ErrResp(err, response.EMAIL_SEND_ERROR)
+	}
+	return resp, nil
+}
+
+func (l *LoginLogic) Register(ctx context.Context, req types.RegisterReq) (resp types.LoginResp, err error) {
+	if req.Email == "" || req.Password == "" || req.Username == "" || req.Code == "" {
+		return resp, response.ErrResp(errors.New("param blank"), response.PARAM_NOT_COMPLETE)
+	}
+	re := regexp.MustCompile(EMAIL_REGEX)
+	if isMatch := re.MatchString(req.Email); !isMatch {
+		return resp, response.ErrResp(err, response.EMAIL_NOT_VALID)
+	}
+	if global.Rdb == nil {
+		return resp, response.ErrResp(errors.New("redis not init"), response.REDIS_ERROR)
+	}
+	code, err := global.Rdb.Get(ctx, fmt.Sprintf(REDIS_EMAIL_CODE, req.Email)).Int()
+	if err != nil {
+		return resp, response.ErrResp(err, response.VERIFY_CODE_VALID)
+	}
+	if fmt.Sprintf("%06d", code) != req.Code {
+		return resp, response.ErrResp(err, response.VERIFY_CODE_VALID)
 	}
 	userRepo := repo.NewUserRepo(global.DB)
 	exist, err := userRepo.GetByEmail(req.Email)

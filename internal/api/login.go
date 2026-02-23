@@ -8,6 +8,16 @@ import (
 	"tgwp/types"
 )
 
+func SendCode(c *gin.Context) {
+	ctx := zlog.GetCtxFromGin(c)
+	req, err := types.BindReq[types.SendCodeReq](c)
+	if err != nil {
+		return
+	}
+	resp, err := logic.NewLoginLogic().SendCode(ctx, req)
+	response.Response(c, resp, err)
+}
+
 func Register(c *gin.Context) {
 	ctx := zlog.GetCtxFromGin(c)
 	req, err := types.BindReq[types.RegisterReq](c)
