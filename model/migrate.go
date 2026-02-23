@@ -4,9 +4,9 @@ import "gorm.io/gorm"
 
 func MigrateTables(db *gorm.DB) error {
 	if err := db.AutoMigrate(
-		&Template{},
 		&User{},
 		&CodeforcesProblem{},
+		&SinglePlayerRoom{},
 	); err != nil {
 		return err
 	}
