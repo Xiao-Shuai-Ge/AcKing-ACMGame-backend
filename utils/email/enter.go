@@ -41,5 +41,5 @@ func SendCode(to string, code int64) error {
 	<p style="text-indent:2em;">你的邮箱验证码为: %06d </p> 
 	<p style="text-indent:2em;">此验证码的有效期为5分钟，请尽快使用。</p>
 	`
-	return Send([]string{to}, "[AcKing学习分享平台] [邮箱验证码]", fmt.Sprintf(message, code))
+	return Send([]string{to}, "[ACM-GAME] [邮箱验证码]", fmt.Sprintf(message, code))
 }
