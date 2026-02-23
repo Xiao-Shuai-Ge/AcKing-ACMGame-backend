@@ -15,10 +15,11 @@ var (
 	COMMON_FAIL = MsgCode{-43960, "失败"}
 
 	/* 请求错误 <0 */
-	TOKEN_IS_EXPIRED = MsgCode{-20000, "token已过期"}
-	TOKEN_IS_BLANK   = MsgCode{-20001, "token为空"}
-	TOKEN_NOT_VALID  = MsgCode{-20002, "token无效"}
-	TOKEN_TYPE_ERROR = MsgCode{-20003, "token类型错误"}
+	TOKEN_IS_EXPIRED   = MsgCode{-20000, "token已过期"}
+	TOKEN_IS_BLANK     = MsgCode{-20001, "token为空"}
+	TOKEN_NOT_VALID    = MsgCode{-20002, "token无效"}
+	TOKEN_TYPE_ERROR   = MsgCode{-20003, "token类型错误"}
+	TOKEN_FORMAT_ERROR = MsgCode{-20004, "token格式错误"}
 
 	/* 内部错误 60000 ~ 69999 */
 	INTERNAL_ERROR              = MsgCode{60001, "内部错误, check log"}
@@ -34,9 +35,13 @@ var (
 	PARAM_NOT_COMPLETE = MsgCode{10004, "参数缺失"}
 	MEMBER_NOT_EXIST   = MsgCode{10005, "用户不存在"}
 	MESSAGE_NOT_EXIST  = MsgCode{10006, "消息不存在"}
+	PASSWORD_ERROR     = MsgCode{10007, "密码错误"}
 
 	/* 用户错误 20000 ~ 29999 */
-	USER_NOT_LOGIN = MsgCode{20001, "用户未登录"}
+	USER_NOT_LOGIN      = MsgCode{20001, "用户未登录"}
+	USER_ALREADY_EXISTS = MsgCode{20002, "用户已存在"}
+	PERMISSION_DENIED   = MsgCode{20003, "权限不足"}
+	REQUEST_FREQUENTLY  = MsgCode{20004, "请求过于频繁"}
 
 	/*
 	 USER_ACCOUNT_DISABLE(20005, "账号不可用"),

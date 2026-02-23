@@ -23,3 +23,6 @@ database:
   migrate: true
   # use dsn
   dsn: root:123456@tcp(localhost:3307)/island?charset=utf8mb4&parseTime=True&loc=Local&timeout=1000ms
+
+jwt:
+  secret: your-secret

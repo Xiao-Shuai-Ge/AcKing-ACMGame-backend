@@ -7,6 +7,10 @@ import (
 	"tgwp/internal/api"
 	"tgwp/log/zlog"
 	"tgwp/manager"
+	"tgwp/middleware"
+	"time"
+
+	"golang.org/x/time/rate"
 )
 
 // RunServer 启动服务器 路由层
@@ -38,5 +42,10 @@ func registerRoutes(routeManager *manager.RouteManager) {
 
 	routeManager.RegisterCommonRoutes(func(rg *gin.RouterGroup) {
 		rg.GET("/test", api.Template)
+	})
+
+	routeManager.RegisterLoginRoutes(func(rg *gin.RouterGroup) {
+		rg.POST("/register", middleware.Limiter(rate.Every(time.Minute), 5), api.Register)
+		rg.POST("/login", middleware.Limiter(rate.Every(time.Minute), 10), api.Login)
 	})
 }

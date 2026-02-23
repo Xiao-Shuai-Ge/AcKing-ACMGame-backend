@@ -1,0 +1,30 @@
+package repo
+
+import (
+	"gorm.io/gorm"
+	"tgwp/model"
+)
+
+type UserRepo struct {
+	DB *gorm.DB
+}
+
+func NewUserRepo(db *gorm.DB) *UserRepo {
+	return &UserRepo{DB: db}
+}
+
+func (r *UserRepo) GetByEmail(email string) (model.User, error) {
+	var user model.User
+	err := r.DB.Where("email = ?", email).First(&user).Error
+	return user, err
+}
+
+func (r *UserRepo) GetByID(id int64) (model.User, error) {
+	var user model.User
+	err := r.DB.Where("id = ?", id).First(&user).Error
+	return user, err
+}
+
+func (r *UserRepo) Create(user *model.User) error {
+	return r.DB.Create(user).Error
+}

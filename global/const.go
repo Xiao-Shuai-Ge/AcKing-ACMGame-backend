@@ -13,7 +13,12 @@ const (
 	AUTH_ENUMS_ATOKEN        = "atoken"
 	AUTH_ENUMS_RTOKEN        = "rtoken"
 	DEFAULT_NODE_ID          = 1
-	TOKEN_USER_ID            = "UserId"
+	TOKEN_USER_ID            = "user_id"
+	TOKEN_ROLE               = "role"
+
+	ROLE_GUEST = 0
+	ROLE_USER  = 1
+	ROLE_ADMIN = 2
 )
 
 var Node, _ = snowflake.NewNode(DEFAULT_NODE_ID)

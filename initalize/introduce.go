@@ -14,5 +14,5 @@ const progect = `
 `
 
 func introduce() {
-	fmt.Println(progect)
+	fmt.Print(progect)
 }

@@ -3,6 +3,7 @@ package initalize
 import (
 	"tgwp/configs"
 	"tgwp/global"
+	"tgwp/model"
 	"tgwp/pkg/database"
 	"tgwp/pkg/mysqlx"
 	"tgwp/pkg/redisx"
@@ -19,7 +20,7 @@ func InitDataBase(config configs.Config) {
 		zlog.Fatalf("不支持的数据库驱动：%s", config.DB.Driver)
 	}
 	if config.App.Env != "pro" {
-		err := global.DB.AutoMigrate()
+		err := model.MigrateTables(global.DB)
 		if err != nil {
 			zlog.Fatalf("数据库迁移失败！")
 		}
