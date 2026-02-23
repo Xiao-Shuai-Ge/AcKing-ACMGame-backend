@@ -28,3 +28,9 @@ func (r *UserRepo) GetByID(id int64) (model.User, error) {
 func (r *UserRepo) Create(user *model.User) error {
 	return r.DB.Create(user).Error
 }
+
+func (r *UserRepo) UpdateProfile(user model.User) error {
+	return r.DB.Model(&model.User{}).Where("id = ?", user.ID).Updates(map[string]interface{}{
+		"username": user.Username,
+	}).Error
+}

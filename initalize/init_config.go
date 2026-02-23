@@ -1,13 +1,13 @@
 package initalize
 
 import (
-	"flag"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
+	"time"
+	"tgwp/cmd/flags"
 	"tgwp/configs"
 	"tgwp/global"
-	"time"
 )
 
 // TODO 可以添加环境变量 环境变量没有加在上面 单纯觉得有点用不到
@@ -16,10 +16,10 @@ func InitConfig() {
 	var cstZone = time.FixedZone("CST", 8*3600) // 东八
 	time.Local = cstZone
 
-	// 默认配置文件路径
-	var configPath string
-	flag.StringVar(&configPath, "c", global.Path+global.DEFAULT_CONFIG_FILE_PATH, "配置文件绝对路径或相对路径")
-	flag.Parse()
+	configPath := flags.FlagOptions.File
+	if configPath == "" || configPath == "config.yaml" {
+		configPath = global.Path + global.DEFAULT_CONFIG_FILE_PATH
+	}
 	fmt.Printf("配置文件路径为 %s\n", configPath)
 	// 初始化配置文件
 	viper.SetConfigFile(configPath)

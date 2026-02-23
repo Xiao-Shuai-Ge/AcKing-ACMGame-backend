@@ -1,11 +1,13 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
 	"tgwp/log/zlog"
 	"tgwp/logic"
 	"tgwp/response"
 	"tgwp/types"
+	"tgwp/utils/jwtUtils"
+
+	"github.com/gin-gonic/gin"
 )
 
 func SendCode(c *gin.Context) {
@@ -35,5 +37,27 @@ func Login(c *gin.Context) {
 		return
 	}
 	resp, err := logic.NewLoginLogic().Login(ctx, req)
+	response.Response(c, resp, err)
+}
+
+func GetProfile(c *gin.Context) {
+	ctx := zlog.GetCtxFromGin(c)
+	req, err := types.BindReq[types.GetProfileReq](c)
+	if err != nil {
+		return
+	}
+	req.UserID = jwtUtils.GetUserId(c)
+	resp, err := logic.NewLoginLogic().GetProfile(ctx, req)
+	response.Response(c, resp, err)
+}
+
+func UpdateProfile(c *gin.Context) {
+	ctx := zlog.GetCtxFromGin(c)
+	req, err := types.BindReq[types.UpdateProfileReq](c)
+	if err != nil {
+		return
+	}
+	req.UserID = jwtUtils.GetUserId(c)
+	resp, err := logic.NewLoginLogic().UpdateProfile(ctx, req)
 	response.Response(c, resp, err)
 }

@@ -2,13 +2,15 @@ package routerg
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"tgwp/configs"
+	"tgwp/global"
 	"tgwp/internal/api"
 	"tgwp/log/zlog"
 	"tgwp/manager"
 	"tgwp/middleware"
 	"time"
+
+	"github.com/gin-gonic/gin"
 
 	"golang.org/x/time/rate"
 )
@@ -42,6 +44,8 @@ func registerRoutes(routeManager *manager.RouteManager) {
 
 	routeManager.RegisterCommonRoutes(func(rg *gin.RouterGroup) {
 		rg.GET("/test", api.Template)
+		rg.GET("/profile", middleware.Limiter(rate.Every(time.Second)*5, 10), middleware.Authentication(global.ROLE_USER), api.GetProfile)
+		rg.POST("/profile", middleware.Limiter(rate.Every(time.Second)*3, 6), middleware.Authentication(global.ROLE_USER), api.UpdateProfile)
 	})
 
 	routeManager.RegisterLoginRoutes(func(rg *gin.RouterGroup) {

@@ -88,11 +88,10 @@ func (l *LoginLogic) Register(ctx context.Context, req types.RegisterReq) (resp 
 		return resp, response.ErrResp(err, response.INTERNAL_ERROR)
 	}
 	user := model.User{
-		Email:     req.Email,
-		Password:  string(hashed),
-		Username:  req.Username,
-		AvatarUrl: req.AvatarUrl,
-		Rating:    req.Rating,
+		Email:    req.Email,
+		Password: string(hashed),
+		Username: req.Username,
+		Rating:   800,
 	}
 	if err = userRepo.Create(&user); err != nil {
 		zlog.CtxErrorf(ctx, "Create user err: %v", err)
@@ -105,7 +104,7 @@ func (l *LoginLogic) Register(ctx context.Context, req types.RegisterReq) (resp 
 	}
 	return types.LoginResp{
 		Token: token,
-		User: toUserInfo(user),
+		User:  toUserInfo(user),
 	}, nil
 }
 
@@ -136,12 +135,53 @@ func (l *LoginLogic) Login(ctx context.Context, req types.LoginReq) (resp types.
 	}, nil
 }
 
+func (l *LoginLogic) GetProfile(ctx context.Context, req types.GetProfileReq) (resp types.GetProfileResp, err error) {
+	if req.UserID == 0 {
+		return resp, response.ErrResp(errors.New("param blank"), response.PARAM_NOT_COMPLETE)
+	}
+	userRepo := repo.NewUserRepo(global.DB)
+	user, err := userRepo.GetByID(req.UserID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return resp, response.ErrResp(err, response.MEMBER_NOT_EXIST)
+		}
+		zlog.CtxErrorf(ctx, "GetByID err: %v", err)
+		return resp, response.ErrResp(err, response.DATABASE_ERROR)
+	}
+	return types.GetProfileResp{
+		ID:       user.ID,
+		Email:    user.Email,
+		Username: user.Username,
+		Rating:   user.Rating,
+	}, nil
+}
+
+func (l *LoginLogic) UpdateProfile(ctx context.Context, req types.UpdateProfileReq) (resp types.UpdateProfileResp, err error) {
+	if req.UserID == 0 || req.Username == "" {
+		return resp, response.ErrResp(errors.New("param blank"), response.PARAM_NOT_COMPLETE)
+	}
+	userRepo := repo.NewUserRepo(global.DB)
+	user, err := userRepo.GetByID(req.UserID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return resp, response.ErrResp(err, response.MEMBER_NOT_EXIST)
+		}
+		zlog.CtxErrorf(ctx, "GetByID err: %v", err)
+		return resp, response.ErrResp(err, response.DATABASE_ERROR)
+	}
+	user.Username = req.Username
+	if err = userRepo.UpdateProfile(user); err != nil {
+		zlog.CtxErrorf(ctx, "UpdateProfile err: %v", err)
+		return resp, response.ErrResp(err, response.DATABASE_ERROR)
+	}
+	return resp, nil
+}
+
 func toUserInfo(user model.User) types.UserInfo {
 	return types.UserInfo{
-		ID:        user.ID,
-		Email:     user.Email,
-		Username:  user.Username,
-		AvatarUrl: user.AvatarUrl,
-		Rating:    user.Rating,
+		ID:       user.ID,
+		Email:    user.Email,
+		Username: user.Username,
+		Rating:   user.Rating,
 	}
 }

@@ -1,12 +1,10 @@
 package types
 
 type RegisterReq struct {
-	Email     string `json:"email" form:"email"`
-	Code      string `json:"code" form:"code"`
-	Password  string `json:"password" form:"password"`
-	Username  string `json:"username" form:"username"`
-	AvatarUrl string `json:"avatar_url" form:"avatar_url"`
-	Rating    int    `json:"rating" form:"rating"`
+	Email    string `json:"email" form:"email"`
+	Code     string `json:"code" form:"code"`
+	Password string `json:"password" form:"password"`
+	Username string `json:"username" form:"username"`
 }
 
 type SendCodeReq struct {
@@ -22,14 +20,32 @@ type LoginReq struct {
 }
 
 type UserInfo struct {
-	ID        int64  `json:"id,string"`
-	Email     string `json:"email"`
-	Username  string `json:"username"`
-	AvatarUrl string `json:"avatar_url"`
-	Rating    int    `json:"rating"`
+	ID       int64  `json:"id,string"`
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	Rating   int    `json:"rating"`
 }
 
 type LoginResp struct {
 	Token string   `json:"token"`
 	User  UserInfo `json:"user"`
+}
+
+type GetProfileReq struct {
+	UserID int64 `json:"-" form:"-"`
+}
+
+type GetProfileResp struct {
+	ID       int64  `json:"id,string"`
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	Rating   int    `json:"rating"`
+}
+
+type UpdateProfileReq struct {
+	UserID   int64  `json:"-" form:"-"`
+	Username string `json:"username" form:"username"`
+}
+
+type UpdateProfileResp struct {
 }
