@@ -271,6 +271,19 @@ func (h *WsHub) getRoomConnections(rootID int64) []*websocket.Conn {
 	return conns
 }
 
+func (h *WsHub) ActiveUserIDs() []int64 {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	if len(h.userConns) == 0 {
+		return nil
+	}
+	ids := make([]int64, 0, len(h.userConns))
+	for userID := range h.userConns {
+		ids = append(ids, userID)
+	}
+	return ids
+}
+
 func (h *WsHub) writePing(conn *websocket.Conn) error {
 	info, ok := h.getInfo(conn)
 	if !ok {

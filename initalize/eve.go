@@ -4,10 +4,12 @@ import (
 	"runtime"
 	"tgwp/global"
 	"tgwp/log/zlog"
+	"tgwp/logic"
 )
 
 func Eve() {
 	zlog.Warnf("开始释放资源！")
+	logic.StopCfQueue()
 	errRedis := global.Rdb.Close()
 	if errRedis != nil {
 		zlog.Errorf("Redis关闭失败 ：%v", errRedis.Error())

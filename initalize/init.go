@@ -3,6 +3,7 @@ package initalize
 import (
 	"tgwp/cmd/flags"
 	"tgwp/global"
+	"tgwp/logic"
 	"tgwp/utils"
 )
 
@@ -31,6 +32,8 @@ func Init() {
 
 	// 对命令行参数进行处理
 	flags.Run()
+
+	logic.StartCfQueue()
 }
 
 func InitPath() {
