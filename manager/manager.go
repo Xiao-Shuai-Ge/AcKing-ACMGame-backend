@@ -1,9 +1,10 @@
 package manager
 
 import (
+	"tgwp/middleware"
+
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
-	"tgwp/middleware"
 )
 
 //主要管理路由组和中间件的注册
@@ -16,15 +17,17 @@ type Middleware func() gin.HandlerFunc
 
 // RouteManager 管理不同的路由组，按业务功能分组
 type RouteManager struct {
-	LoginRoutes  *gin.RouterGroup // 登录相关的路由组
-	CommonRoutes *gin.RouterGroup //通用功能相关的路由组
+	LoginRoutes        *gin.RouterGroup // 登录相关的路由组
+	CommonRoutes       *gin.RouterGroup //通用功能相关的路由组
+	SinglePlayerRoutes *gin.RouterGroup //单人模式相关的路由组
 }
 
 // NewRouteManager 创建一个新的 RouteManager 实例，包含各业务功能的路由组
 func NewRouteManager(router *gin.Engine) *RouteManager {
 	return &RouteManager{
-		LoginRoutes:  router.Group("/api/login"),  // 初始化登录路由组
-		CommonRoutes: router.Group("/api/common"), //通用功能相关的路由组
+		LoginRoutes:        router.Group("/api/login"),         // 初始化登录路由组
+		CommonRoutes:       router.Group("/api/common"),        //通用功能相关的路由组
+		SinglePlayerRoutes: router.Group("/api/single-player"), //单人模式相关的路由组
 	}
 }
 
@@ -38,6 +41,10 @@ func (rm *RouteManager) RegisterCommonRoutes(handler PathHandler) {
 	handler(rm.CommonRoutes)
 }
 
+func (rm *RouteManager) RegisterSinglePlayerRoutes(handler PathHandler) {
+	handler(rm.SinglePlayerRoutes)
+}
+
 // RegisterMiddleware 根据组名为对应的路由组注册中间件
 // group 参数为 "login"、"profile"、"team"或"Common"，分别对应不同的路由组
 func (rm *RouteManager) RegisterMiddleware(group string, middleware Middleware) {
@@ -46,6 +53,8 @@ func (rm *RouteManager) RegisterMiddleware(group string, middleware Middleware) 
 		rm.LoginRoutes.Use(middleware())
 	case "common":
 		rm.CommonRoutes.Use(middleware())
+	case "single-player":
+		rm.SinglePlayerRoutes.Use(middleware())
 	}
 }
 

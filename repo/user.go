@@ -34,3 +34,9 @@ func (r *UserRepo) UpdateProfile(user model.User) error {
 		"username": user.Username,
 	}).Error
 }
+
+func (r *UserRepo) UpdateRating(id int64, rating int) error {
+	return r.DB.Model(&model.User{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"rating": rating,
+	}).Error
+}

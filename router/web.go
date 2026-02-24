@@ -49,6 +49,12 @@ func registerRoutes(routeManager *manager.RouteManager) {
 		rg.GET("/ws", middleware.Authentication(global.ROLE_USER), api.WebsocketConnect)
 	})
 
+	routeManager.RegisterSinglePlayerRoutes(func(rg *gin.RouterGroup) {
+		rg.POST("/room", middleware.Authentication(global.ROLE_USER), api.CreateSinglePlayerRoom)
+		rg.GET("/room", api.GetSinglePlayerRoomInfo)
+		rg.POST("/room/abandon", middleware.Authentication(global.ROLE_USER), api.AbandonSinglePlayerRoom)
+	})
+
 	routeManager.RegisterLoginRoutes(func(rg *gin.RouterGroup) {
 		rg.POST("/send-code", middleware.Limiter(rate.Every(time.Minute), 4), api.SendCode)
 		rg.POST("/register", middleware.Limiter(rate.Every(time.Minute), 5), api.Register)
