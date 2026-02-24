@@ -10,6 +10,7 @@ type SinglePlayerRoom struct {
 	PerformanceScore int    `gorm:"column:performance_score;type:int;default:0;comment:表现分"`
 	RatingBefore     int    `gorm:"column:rating_before;type:int;default:0;comment:结算前rating"`
 	RatingAfter      int    `gorm:"column:rating_after;type:int;default:0;comment:结算后rating"`
+	ExtraInfo        string `gorm:"column:extra_info;type:text;comment:扩展信息"`
 }
 
 func (s *SinglePlayerRoom) TableName() string {

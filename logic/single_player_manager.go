@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 	"time"
 
@@ -11,6 +12,10 @@ import (
 	"tgwp/response"
 	"tgwp/types"
 )
+
+type RoomExtraInfo struct {
+	Submissions []types.RoomSubmissionRecord `json:"submissions"`
+}
 
 type SinglePlayerManager struct {
 	mu      sync.Mutex
@@ -52,6 +57,16 @@ func (m *SinglePlayerManager) StartRoom(room model.SinglePlayerRoom, problem mod
 		stopCh:    make(chan struct{}),
 		penalty:   room.Penalty,
 	}
+
+	if room.ExtraInfo != "" {
+		var extraInfo RoomExtraInfo
+		if err := json.Unmarshal([]byte(room.ExtraInfo), &extraInfo); err == nil {
+			for _, s := range extraInfo.Submissions {
+				worker.processed[s.SubmissionID] = struct{}{}
+			}
+		}
+	}
+
 	m.workers[room.ID] = worker
 	m.mu.Unlock()
 	go worker.run()
@@ -97,6 +112,7 @@ func (w *singlePlayerWorker) tick() {
 		}
 		if submission.Verdict == "OK" {
 			w.processed[submission.SubmissionID] = struct{}{}
+			w.saveSubmission(submission.SubmissionID, submission.Verdict)
 			GetWsHub().SendToUser(w.room.UserID, types.WsResponse{
 				Type:    "single_room_update",
 				Code:    response.SUCCESS.Code,
@@ -110,6 +126,7 @@ func (w *singlePlayerWorker) tick() {
 			return
 		}
 		w.processed[submission.SubmissionID] = struct{}{}
+		w.saveSubmission(submission.SubmissionID, submission.Verdict)
 		if isPenaltyVerdict(submission.Verdict) {
 			w.penalty += 3
 			_ = updateRoomPenalty(w.room.ID, w.penalty)
@@ -171,4 +188,25 @@ func (w *singlePlayerWorker) finish(solved bool) {
 func updateRoomPenalty(roomID int64, penalty int) error {
 	roomRepo := repo.NewSinglePlayerRoomRepo(global.DB)
 	return roomRepo.UpdatePenalty(roomID, penalty)
+}
+
+func (w *singlePlayerWorker) saveSubmission(submissionID int64, verdict string) {
+	var extraInfo RoomExtraInfo
+	if w.room.ExtraInfo != "" {
+		_ = json.Unmarshal([]byte(w.room.ExtraInfo), &extraInfo)
+	}
+	// check duplicate
+	for _, s := range extraInfo.Submissions {
+		if s.SubmissionID == submissionID {
+			return
+		}
+	}
+	extraInfo.Submissions = append(extraInfo.Submissions, types.RoomSubmissionRecord{
+		SubmissionID: submissionID,
+		Verdict:      verdict,
+		SubmitTime:   time.Now().Unix(),
+	})
+	bytes, _ := json.Marshal(extraInfo)
+	w.room.ExtraInfo = string(bytes)
+	_ = repo.NewSinglePlayerRoomRepo(global.DB).UpdateExtraInfo(w.room.ID, w.room.ExtraInfo)
 }

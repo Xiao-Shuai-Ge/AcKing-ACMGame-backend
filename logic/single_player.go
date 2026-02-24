@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strconv"
 	"time"
@@ -65,6 +66,8 @@ func (l *SinglePlayerLogic) CreateRoom(ctx context.Context, userID int64) (resp 
 		}
 		return resp, response.ErrResp(err, response.DATABASE_ERROR)
 	}
+	// 调试，指定同一道题目
+	// problem.ID = "1541A"
 	room := model.SinglePlayerRoom{
 		ProblemID:    problem.ID,
 		UserID:       userID,
@@ -166,7 +169,7 @@ func parseRoomID(roomID string) (int64, error) {
 }
 
 func buildSingleRoomInfo(room model.SinglePlayerRoom, problem model.CodeforcesProblem) types.SinglePlayerRoomInfo {
-	return types.SinglePlayerRoomInfo{
+	info := types.SinglePlayerRoomInfo{
 		RoomID:            room.ID,
 		UserID:            room.UserID,
 		ProblemID:         room.ProblemID,
@@ -180,6 +183,16 @@ func buildSingleRoomInfo(room model.SinglePlayerRoom, problem model.CodeforcesPr
 		CreatedAt:         room.CreatedAt,
 		EndTime:           room.EndTime,
 	}
+
+	if room.ExtraInfo != "" {
+		var extra struct {
+			Submissions []types.RoomSubmissionRecord `json:"submissions"`
+		}
+		if err := json.Unmarshal([]byte(room.ExtraInfo), &extra); err == nil {
+			info.Submissions = extra.Submissions
+		}
+	}
+	return info
 }
 
 func calcPerformance(difficulty int, minutes int, penalty int, solved bool) int {

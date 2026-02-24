@@ -1,8 +1,9 @@
 package repo
 
 import (
-	"gorm.io/gorm"
 	"tgwp/model"
+
+	"gorm.io/gorm"
 )
 
 type SinglePlayerRoomRepo struct {
@@ -32,6 +33,12 @@ func (r *SinglePlayerRoomRepo) GetActiveByUser(userID int64) (model.SinglePlayer
 func (r *SinglePlayerRoomRepo) UpdatePenalty(id int64, penalty int) error {
 	return r.DB.Model(&model.SinglePlayerRoom{}).Where("id = ?", id).Updates(map[string]interface{}{
 		"penalty": penalty,
+	}).Error
+}
+
+func (r *SinglePlayerRoomRepo) UpdateExtraInfo(id int64, extraInfo string) error {
+	return r.DB.Model(&model.SinglePlayerRoom{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"extra_info": extraInfo,
 	}).Error
 }
 

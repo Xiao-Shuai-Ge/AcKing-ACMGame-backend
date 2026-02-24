@@ -37,5 +37,12 @@ type SinglePlayerRoomInfo struct {
 	RatingBefore    int       `json:"rating_before"`
 	RatingAfter     int       `json:"rating_after"`
 	CreatedAt       time.Time `json:"created_at"`
-	EndTime         int64     `json:"end_time"`
+	EndTime         int64  `json:"end_time"`
+	Submissions     []RoomSubmissionRecord `json:"submissions"`
+}
+
+type RoomSubmissionRecord struct {
+	SubmissionID int64  `json:"submission_id"`
+	Verdict      string `json:"verdict"`
+	SubmitTime   int64  `json:"submit_time"`
 }
