@@ -177,6 +177,24 @@ func (l *LoginLogic) UpdateProfile(ctx context.Context, req types.UpdateProfileR
 	return resp, nil
 }
 
+func (l *LoginLogic) GetUserInfo(ctx context.Context, req types.GetUserInfoReq) (resp types.GetUserInfoResp, err error) {
+	if req.UserID == 0 {
+		return resp, response.ErrResp(errors.New("param blank"), response.PARAM_NOT_COMPLETE)
+	}
+	userRepo := repo.NewUserRepo(global.DB)
+	user, err := userRepo.GetByID(req.UserID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return resp, response.ErrResp(err, response.MEMBER_NOT_EXIST)
+		}
+		zlog.CtxErrorf(ctx, "GetByID err: %v", err)
+		return resp, response.ErrResp(err, response.DATABASE_ERROR)
+	}
+	return types.GetUserInfoResp{
+		UserInfo: toUserInfo(user),
+	}, nil
+}
+
 func toUserInfo(user model.User) types.UserInfo {
 	return types.UserInfo{
 		ID:       user.ID,

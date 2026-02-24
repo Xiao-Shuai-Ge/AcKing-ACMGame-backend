@@ -49,3 +49,11 @@ type UpdateProfileReq struct {
 
 type UpdateProfileResp struct {
 }
+
+type GetUserInfoReq struct {
+	UserID int64 `json:"user_id" form:"user_id"`
+}
+
+type GetUserInfoResp struct {
+	UserInfo
+}

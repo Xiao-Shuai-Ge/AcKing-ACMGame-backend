@@ -97,6 +97,15 @@ func (w *singlePlayerWorker) tick() {
 		}
 		if submission.Verdict == "OK" {
 			w.processed[submission.SubmissionID] = struct{}{}
+			GetWsHub().SendToUser(w.room.UserID, types.WsResponse{
+				Type:    "single_room_update",
+				Code:    response.SUCCESS.Code,
+				Message: response.SUCCESS.Msg,
+				Data: map[string]interface{}{
+					"room":         buildSingleRoomInfo(w.room, w.problem),
+					"last_verdict": submission.Verdict,
+				},
+			})
 			w.finish(true)
 			return
 		}

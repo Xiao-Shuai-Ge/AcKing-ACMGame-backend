@@ -46,6 +46,7 @@ func registerRoutes(routeManager *manager.RouteManager) {
 		rg.GET("/test", api.Template)
 		rg.GET("/profile", middleware.Limiter(rate.Every(time.Second)*5, 10), middleware.Authentication(global.ROLE_USER), api.GetProfile)
 		rg.POST("/profile", middleware.Limiter(rate.Every(time.Second)*3, 6), middleware.Authentication(global.ROLE_USER), api.UpdateProfile)
+		rg.GET("/user-info", middleware.Limiter(rate.Every(time.Second)*5, 10), api.GetUserInfo)
 		rg.GET("/ws", middleware.Authentication(global.ROLE_USER), api.WebsocketConnect)
 	})
 

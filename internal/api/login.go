@@ -61,3 +61,13 @@ func UpdateProfile(c *gin.Context) {
 	resp, err := logic.NewLoginLogic().UpdateProfile(ctx, req)
 	response.Response(c, resp, err)
 }
+
+func GetUserInfo(c *gin.Context) {
+	ctx := zlog.GetCtxFromGin(c)
+	req, err := types.BindReq[types.GetUserInfoReq](c)
+	if err != nil {
+		return
+	}
+	resp, err := logic.NewLoginLogic().GetUserInfo(ctx, req)
+	response.Response(c, resp, err)
+}
