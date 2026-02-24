@@ -54,11 +54,11 @@ func (l *SinglePlayerLogic) CreateRoom(ctx context.Context, userID int64) (resp 
 	if rating <= 0 {
 		rating = 800
 	}
-	minDifficulty := rating - 200
+	minDifficulty := rating - 150
 	if minDifficulty < 0 {
 		minDifficulty = 0
 	}
-	maxDifficulty := rating + 200
+	maxDifficulty := rating + 150
 	problem, err := repo.NewCodeforcesProblemRepo(global.DB).GetRandomByDifficulty(minDifficulty, maxDifficulty)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -195,19 +195,14 @@ func buildSingleRoomInfo(room model.SinglePlayerRoom, problem model.CodeforcesPr
 	return info
 }
 
-func calcPerformance(difficulty int, minutes int, penalty int, solved bool) int {
+func calcPerformance(minutes int, penalty int, solved bool) int {
 	if !solved {
-		return difficulty - 200
+		return -50
 	}
 	totalMinutes := minutes + penalty
-	over := totalMinutes - 10
-	if over < 0 {
-		over = 0
-	}
-	score := difficulty + 200 - over*10
-	minScore := difficulty - 100
-	if minScore < score {
-		score = minScore
+	score := 80 - totalMinutes*2
+	if score < -40 {
+		score = -40
 	}
 	return score
 }
@@ -216,7 +211,7 @@ func finishSingleRoom(ctx context.Context, room model.SinglePlayerRoom, difficul
 	_ = ctx
 	solved := status == 2
 	minutes := int(time.Since(room.CreatedAt).Minutes())
-	performance := calcPerformance(difficulty, minutes, penalty, solved)
+	performance := calcPerformance(minutes, penalty, solved)
 	ratingBefore := room.RatingBefore
 	if ratingBefore == 0 {
 		user, err := repo.NewUserRepo(global.DB).GetByID(room.UserID)
@@ -227,7 +222,10 @@ func finishSingleRoom(ctx context.Context, room model.SinglePlayerRoom, difficul
 	if ratingBefore == 0 {
 		ratingBefore = 800
 	}
-	ratingAfter := (performance + ratingBefore) / 2
+	ratingAfter := ratingBefore + performance
+	if ratingAfter < 0 {
+		ratingAfter = 0
+	}
 	endTime := time.Now().Unix()
 	roomRepo := repo.NewSinglePlayerRoomRepo(global.DB)
 	if err := roomRepo.FinishRoom(room.ID, status, endTime, performance, ratingBefore, ratingAfter, penalty); err != nil {
