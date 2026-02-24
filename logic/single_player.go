@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"errors"
+	"strconv"
 	"time"
 
 	"gorm.io/gorm"
@@ -79,10 +80,11 @@ func (l *SinglePlayerLogic) CreateRoom(ctx context.Context, userID int64) (resp 
 
 func (l *SinglePlayerLogic) GetRoomInfo(ctx context.Context, req types.SinglePlayerRoomInfoReq) (resp types.SinglePlayerRoomInfoResp, err error) {
 	_ = ctx
-	if req.RoomID == 0 {
+	roomID, err := parseRoomID(req.RoomID)
+	if err != nil {
 		return resp, response.ErrResp(errors.New("param blank"), response.PARAM_NOT_COMPLETE)
 	}
-	room, problem, err := l.getRoomAndProblem(req.RoomID)
+	room, problem, err := l.getRoomAndProblem(roomID)
 	if err != nil {
 		return resp, err
 	}
@@ -96,8 +98,12 @@ func (l *SinglePlayerLogic) AbandonRoom(ctx context.Context, userID int64, req t
 	}
 	roomRepo := repo.NewSinglePlayerRoomRepo(global.DB)
 	var room model.SinglePlayerRoom
-	if req.RoomID != 0 {
-		room, err = roomRepo.GetByID(req.RoomID)
+	if req.RoomID != "" {
+		roomID, err := parseRoomID(req.RoomID)
+		if err != nil {
+			return resp, response.ErrResp(errors.New("param blank"), response.PARAM_NOT_COMPLETE)
+		}
+		room, err = roomRepo.GetByID(roomID)
 	} else {
 		room, err = roomRepo.GetActiveByUser(userID)
 	}
@@ -150,6 +156,13 @@ func (l *SinglePlayerLogic) getRoomAndProblem(roomID int64) (model.SinglePlayerR
 		return room, model.CodeforcesProblem{}, response.ErrResp(err, response.DATABASE_ERROR)
 	}
 	return room, problem, nil
+}
+
+func parseRoomID(roomID string) (int64, error) {
+	if roomID == "" {
+		return 0, errors.New("param blank")
+	}
+	return strconv.ParseInt(roomID, 10, 64)
 }
 
 func buildSingleRoomInfo(room model.SinglePlayerRoom, problem model.CodeforcesProblem) types.SinglePlayerRoomInfo {

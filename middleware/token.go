@@ -1,18 +1,26 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
 	"strings"
 	"tgwp/global"
 	"tgwp/log/zlog"
 	"tgwp/response"
 	"tgwp/utils/jwtUtils"
+
+	"github.com/gin-gonic/gin"
 )
 
 func Authentication(role int) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := zlog.GetCtxFromGin(c)
 		authorization := c.GetHeader("Authorization")
+		if authorization == "" {
+			token := c.Query("token")
+			if token != "" {
+				authorization = "Bearer " + token
+			}
+			zlog.CtxDebugf(ctx, "token:%s", token)
+		}
 		if authorization == "" {
 			zlog.CtxErrorf(ctx, "authorization为空")
 			response.NewResponse(c).Error(response.TOKEN_IS_BLANK)

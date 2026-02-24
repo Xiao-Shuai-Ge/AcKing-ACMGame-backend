@@ -10,7 +10,7 @@ type SinglePlayerCreateResp struct {
 }
 
 type SinglePlayerRoomInfoReq struct {
-	RoomID int64 `form:"room_id" json:"room_id"`
+	RoomID string `form:"room_id" json:"room_id"`
 }
 
 type SinglePlayerRoomInfoResp struct {
@@ -18,7 +18,7 @@ type SinglePlayerRoomInfoResp struct {
 }
 
 type SinglePlayerAbandonReq struct {
-	RoomID int64 `json:"room_id" form:"room_id"`
+	RoomID string `json:"room_id" form:"room_id"`
 }
 
 type SinglePlayerAbandonResp struct {
