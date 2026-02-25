@@ -6,7 +6,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/robfig/cron/v3"
+
 	"tgwp/global"
+	"tgwp/log/zlog"
 	"tgwp/model"
 	"tgwp/repo"
 	"tgwp/response"
@@ -33,6 +36,15 @@ type singlePlayerWorker struct {
 
 var singlePlayerManagerOnce sync.Once
 var singlePlayerManager *SinglePlayerManager
+
+const (
+	singlePlayerRoomTimeout       = 5 * time.Hour
+	singlePlayerRoomCheckInterval = 5 * time.Minute
+)
+
+var singlePlayerCronMu sync.Mutex
+var singlePlayerCron *cron.Cron
+var singlePlayerCronRunning bool
 
 func GetSinglePlayerManager() *SinglePlayerManager {
 	singlePlayerManagerOnce.Do(func() {
@@ -209,4 +221,95 @@ func (w *singlePlayerWorker) saveSubmission(submissionID int64, verdict string) 
 	bytes, _ := json.Marshal(extraInfo)
 	w.room.ExtraInfo = string(bytes)
 	_ = repo.NewSinglePlayerRoomRepo(global.DB).UpdateExtraInfo(w.room.ID, w.room.ExtraInfo)
+}
+
+func StartSinglePlayerCron() {
+	singlePlayerCronMu.Lock()
+	defer singlePlayerCronMu.Unlock()
+	if singlePlayerCronRunning {
+		return
+	}
+	c := cron.New()
+	_, err := c.AddFunc("@every 5m", func() {
+		finishTimeoutSingleRooms()
+	})
+	if err != nil {
+		zlog.Errorf("单人房间定时任务启动失败：%v", err)
+		return
+	}
+	c.Start()
+	singlePlayerCron = c
+	singlePlayerCronRunning = true
+	zlog.Infof("单人房间定时任务启动，间隔%v", singlePlayerRoomCheckInterval)
+}
+
+func StopSinglePlayerCron() {
+	singlePlayerCronMu.Lock()
+	defer singlePlayerCronMu.Unlock()
+	if !singlePlayerCronRunning {
+		return
+	}
+	singlePlayerCron.Stop()
+	singlePlayerCron = nil
+	singlePlayerCronRunning = false
+	zlog.Infof("单人房间定时任务停止")
+}
+
+func FinishAllActiveSinglePlayerRooms() error {
+	roomRepo := repo.NewSinglePlayerRoomRepo(global.DB)
+	rooms, err := roomRepo.ListActive()
+	if err != nil {
+		zlog.Errorf("初始化结算单人房间失败：%v", err)
+		return err
+	}
+	if len(rooms) == 0 {
+		return nil
+	}
+	count, lastErr := finishSingleRooms(context.Background(), rooms)
+	if count > 0 {
+		zlog.Infof("初始化已结算单人房间：%d", count)
+	}
+	return lastErr
+}
+
+func finishTimeoutSingleRooms() {
+	roomRepo := repo.NewSinglePlayerRoomRepo(global.DB)
+	before := time.Now().Add(-singlePlayerRoomTimeout)
+	rooms, err := roomRepo.ListActiveBefore(before)
+	if err != nil {
+		zlog.Errorf("单人房间超时检查失败：%v", err)
+		return
+	}
+	if len(rooms) == 0 {
+		return
+	}
+	count, lastErr := finishSingleRooms(context.Background(), rooms)
+	if lastErr != nil {
+		zlog.Errorf("单人房间超时结算失败：%v", lastErr)
+	}
+	if count > 0 {
+		zlog.Infof("单人房间超时结算数量：%d", count)
+	}
+}
+
+func finishSingleRooms(ctx context.Context, rooms []model.SinglePlayerRoom) (int, error) {
+	successCount := 0
+	var lastErr error
+	for _, room := range rooms {
+		problem, err := repo.NewCodeforcesProblemRepo(global.DB).GetByID(room.ProblemID)
+		if err != nil {
+			zlog.CtxWarnf(ctx, "单人房间结算失败：%v", err)
+			lastErr = err
+			continue
+		}
+		_, err = finishSingleRoom(ctx, room, problem.Difficulty, room.Penalty, 1)
+		if err != nil {
+			zlog.CtxWarnf(ctx, "单人房间结算失败：%v", err)
+			lastErr = err
+			continue
+		}
+		GetSinglePlayerManager().StopRoom(room.ID)
+		successCount++
+	}
+	return successCount, lastErr
 }

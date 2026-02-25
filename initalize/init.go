@@ -3,6 +3,7 @@ package initalize
 import (
 	"tgwp/cmd/flags"
 	"tgwp/global"
+	"tgwp/log/zlog"
 	"tgwp/logic"
 	"tgwp/utils"
 )
@@ -33,7 +34,14 @@ func Init() {
 	// 对命令行参数进行处理
 	flags.Run()
 
+	// 关闭所有活跃的单人房间
+	err := logic.FinishAllActiveSinglePlayerRooms()
+	if err != nil {
+		zlog.Warnf("初始化结算单人房间失败：%v", err)
+	}
+
 	logic.StartCfQueue()
+	logic.StartSinglePlayerCron()
 }
 
 func InitPath() {

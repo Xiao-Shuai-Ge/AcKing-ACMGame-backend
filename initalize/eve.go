@@ -10,6 +10,7 @@ import (
 func Eve() {
 	zlog.Warnf("开始释放资源！")
 	logic.StopCfQueue()
+	logic.StopSinglePlayerCron()
 	errRedis := global.Rdb.Close()
 	if errRedis != nil {
 		zlog.Errorf("Redis关闭失败 ：%v", errRedis.Error())

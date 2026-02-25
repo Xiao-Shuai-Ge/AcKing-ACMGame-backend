@@ -2,6 +2,7 @@ package repo
 
 import (
 	"tgwp/model"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -28,6 +29,18 @@ func (r *SinglePlayerRoomRepo) GetActiveByUser(userID int64) (model.SinglePlayer
 	var room model.SinglePlayerRoom
 	err := r.DB.Where("user_id = ? AND status = ?", userID, 0).Order("created_at desc").First(&room).Error
 	return room, err
+}
+
+func (r *SinglePlayerRoomRepo) ListActive() ([]model.SinglePlayerRoom, error) {
+	var rooms []model.SinglePlayerRoom
+	err := r.DB.Where("status = ?", 0).Order("created_at asc").Find(&rooms).Error
+	return rooms, err
+}
+
+func (r *SinglePlayerRoomRepo) ListActiveBefore(before time.Time) ([]model.SinglePlayerRoom, error) {
+	var rooms []model.SinglePlayerRoom
+	err := r.DB.Where("status = ? AND created_at <= ?", 0, before).Order("created_at asc").Find(&rooms).Error
+	return rooms, err
 }
 
 func (r *SinglePlayerRoomRepo) UpdatePenalty(id int64, penalty int) error {
