@@ -429,12 +429,12 @@ type teamRoomModeConfig struct {
 var teamRoomModeConfigs = map[string]teamRoomModeConfig{
 	"div3": {
 		Mode:     "div3",
-		Duration: 3 * time.Hour,
+		Duration: 2 * time.Hour,
 		Problems: []int{800, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000},
 	},
 	"div3-plus": {
 		Mode:     "div3-plus",
-		Duration: 3 * time.Minute,
+		Duration: 2*time.Hour + 30*time.Minute,
 		Problems: []int{800, 800, 900, 900, 1000, 1100, 1100, 1200, 1300, 1400, 1500, 1600, 1800, 1900, 2100},
 	},
 }

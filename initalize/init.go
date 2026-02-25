@@ -1,6 +1,8 @@
 package initalize
 
 import (
+	"context"
+
 	"tgwp/cmd/flags"
 	"tgwp/global"
 	"tgwp/log/zlog"
@@ -39,6 +41,7 @@ func Init() {
 	if err != nil {
 		zlog.Warnf("初始化结算单人房间失败：%v", err)
 	}
+	logic.FinishAllActiveTeamRooms(context.Background())
 
 	logic.StartCfQueue()
 	logic.StartSinglePlayerCron()
