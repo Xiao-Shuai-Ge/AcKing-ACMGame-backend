@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -72,6 +73,8 @@ func NewWsHub() *WsHub {
 		handlers:  make(map[string]WsHandler),
 	}
 	hub.RegisterHandler("ping", hub.handlePing)
+	hub.RegisterHandler("team_room_join", hub.handleTeamRoomJoin)
+	hub.RegisterHandler("team_room_leave", hub.handleTeamRoomLeave)
 	return hub
 }
 
@@ -85,6 +88,11 @@ func (h *WsHub) Serve(ctx context.Context, w http.ResponseWriter, r *http.Reques
 		return err
 	}
 	h.register(conn, userID, rootID)
+	if userID > 0 && rootID > 0 {
+		if err := h.autoJoinTeamRoom(ctx, conn, userID, rootID); err != nil {
+			zlog.CtxWarnf(ctx, "websocket自动加入团队房间失败:%v", err)
+		}
+	}
 	go h.readLoop(ctx, conn)
 	go h.heartbeatLoop(ctx, conn)
 	return nil
@@ -106,6 +114,58 @@ func (h *WsHub) register(conn *websocket.Conn, userID int64, rootID int64) {
 	}
 }
 
+func (h *WsHub) BindRoom(conn *websocket.Conn, rootID int64) {
+	if rootID <= 0 {
+		return
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	info, ok := h.connInfo[conn]
+	if !ok {
+		return
+	}
+	if info.RootID == rootID {
+		return
+	}
+	if info.RootID > 0 {
+		if roomSet, ok := h.roomConns[info.RootID]; ok {
+			delete(roomSet, conn)
+			if len(roomSet) == 0 {
+				delete(h.roomConns, info.RootID)
+			}
+		}
+	}
+	info.RootID = rootID
+	if _, ok := h.roomConns[rootID]; !ok {
+		h.roomConns[rootID] = make(map[*websocket.Conn]struct{})
+	}
+	h.roomConns[rootID][conn] = struct{}{}
+}
+
+func (h *WsHub) UnbindRoom(conn *websocket.Conn, rootID int64) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	info, ok := h.connInfo[conn]
+	if !ok {
+		return
+	}
+	if rootID <= 0 {
+		rootID = info.RootID
+	}
+	if rootID <= 0 {
+		return
+	}
+	if roomSet, ok := h.roomConns[rootID]; ok {
+		delete(roomSet, conn)
+		if len(roomSet) == 0 {
+			delete(h.roomConns, rootID)
+		}
+	}
+	if info.RootID == rootID {
+		info.RootID = 0
+	}
+}
+
 func (h *WsHub) unregister(conn *websocket.Conn) {
 	h.mu.Lock()
 	info, ok := h.connInfo[conn]
@@ -113,6 +173,8 @@ func (h *WsHub) unregister(conn *websocket.Conn) {
 		h.mu.Unlock()
 		return
 	}
+	userID := info.UserID
+	rootID := info.RootID
 	delete(h.connInfo, conn)
 	if userSet, ok := h.userConns[info.UserID]; ok {
 		delete(userSet, conn)
@@ -129,6 +191,11 @@ func (h *WsHub) unregister(conn *websocket.Conn) {
 		}
 	}
 	h.mu.Unlock()
+	if userID > 0 && rootID > 0 {
+		if err := h.autoLeaveTeamRoom(context.Background(), conn, userID, rootID); err != nil {
+			zlog.Warnf("websocket自动离开团队房间失败:%v", err)
+		}
+	}
 	_ = conn.Close()
 }
 
@@ -217,6 +284,106 @@ func (h *WsHub) handlePing(ctx *WsContext, data json.RawMessage) error {
 	})
 }
 
+func (h *WsHub) handleTeamRoomJoin(ctx *WsContext, data json.RawMessage) error {
+	var req types.TeamRoomWsJoinReq
+	if err := json.Unmarshal(data, &req); err != nil {
+		return errors.New("param blank")
+	}
+	roomIDStr := req.RoomID
+	if roomIDStr == "" && ctx.RootID > 0 {
+		roomIDStr = strconv.FormatInt(ctx.RootID, 10)
+	}
+	roomID, err := parseTeamRoomID(roomIDStr)
+	if err != nil {
+		return errors.New("param blank")
+	}
+	roomInfo, err := NewTeamRoomLogic().JoinRoom(ctx.Ctx, ctx.UserID, roomID)
+	if err != nil {
+		return err
+	}
+	h.BindRoom(ctx.Conn, roomID)
+	h.SendToRoom(roomID, types.WsResponse{
+		Type:    "team_room_member_update",
+		Code:    response.SUCCESS.Code,
+		Message: response.SUCCESS.Msg,
+		Data: map[string]interface{}{
+			"room":    roomInfo,
+			"action":  "join",
+			"user_id": ctx.UserID,
+		},
+	})
+	return nil
+}
+
+func (h *WsHub) handleTeamRoomLeave(ctx *WsContext, data json.RawMessage) error {
+	var req types.TeamRoomWsLeaveReq
+	if err := json.Unmarshal(data, &req); err != nil {
+		return errors.New("param blank")
+	}
+	roomIDStr := req.RoomID
+	if roomIDStr == "" && ctx.RootID > 0 {
+		roomIDStr = strconv.FormatInt(ctx.RootID, 10)
+	}
+	roomID, err := parseTeamRoomID(roomIDStr)
+	if err != nil {
+		return errors.New("param blank")
+	}
+	roomInfo, err := NewTeamRoomLogic().LeaveRoom(ctx.Ctx, ctx.UserID, roomID)
+	if err != nil {
+		return err
+	}
+	h.SendToRoom(roomID, types.WsResponse{
+		Type:    "team_room_member_update",
+		Code:    response.SUCCESS.Code,
+		Message: response.SUCCESS.Msg,
+		Data: map[string]interface{}{
+			"room":    roomInfo,
+			"action":  "leave",
+			"user_id": ctx.UserID,
+		},
+	})
+	h.UnbindRoom(ctx.Conn, roomID)
+	return nil
+}
+
+func (h *WsHub) autoJoinTeamRoom(ctx context.Context, conn *websocket.Conn, userID int64, roomID int64) error {
+	roomInfo, err := NewTeamRoomLogic().JoinRoom(ctx, userID, roomID)
+	if err != nil {
+		return err
+	}
+	h.BindRoom(conn, roomID)
+	h.SendToRoom(roomID, types.WsResponse{
+		Type:    "team_room_member_update",
+		Code:    response.SUCCESS.Code,
+		Message: response.SUCCESS.Msg,
+		Data: map[string]interface{}{
+			"room":    roomInfo,
+			"action":  "join",
+			"user_id": userID,
+		},
+	})
+	return nil
+}
+
+func (h *WsHub) autoLeaveTeamRoom(ctx context.Context, conn *websocket.Conn, userID int64, roomID int64) error {
+	roomInfo, err := NewTeamRoomLogic().LeaveRoom(ctx, userID, roomID)
+	if err != nil {
+		return err
+	}
+	h.UnbindRoom(conn, roomID)
+	h.SendToRoom(roomID, types.WsResponse{
+		Type:    "team_room_member_update",
+		Code:    response.SUCCESS.Code,
+		Message: response.SUCCESS.Msg,
+		Data: map[string]interface{}{
+			"room":    roomInfo,
+			"action":  "leave",
+			"user_id": userID,
+		},
+	})
+	return nil
+}
+
 func (h *WsHub) Send(conn *websocket.Conn, resp types.WsResponse) error {
 	payload, err := json.Marshal(resp)
 	if err != nil {
@@ -280,6 +447,34 @@ func (h *WsHub) ActiveUserIDs() []int64 {
 	ids := make([]int64, 0, len(h.userConns))
 	for userID := range h.userConns {
 		ids = append(ids, userID)
+	}
+	return ids
+}
+
+func (h *WsHub) ActiveRoomUserIDs(rootID int64) []int64 {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	set := h.roomConns[rootID]
+	if len(set) == 0 {
+		return nil
+	}
+	unique := make(map[int64]struct{})
+	for conn := range set {
+		info, ok := h.connInfo[conn]
+		if !ok {
+			continue
+		}
+		if info.UserID == 0 {
+			continue
+		}
+		unique[info.UserID] = struct{}{}
+	}
+	if len(unique) == 0 {
+		return nil
+	}
+	ids := make([]int64, 0, len(unique))
+	for id := range unique {
+		ids = append(ids, id)
 	}
 	return ids
 }

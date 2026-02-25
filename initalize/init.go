@@ -42,6 +42,10 @@ func Init() {
 
 	logic.StartCfQueue()
 	logic.StartSinglePlayerCron()
+	err = logic.StartAllActiveTeamRooms()
+	if err != nil {
+		zlog.Warnf("初始化启动团队房间失败：%v", err)
+	}
 }
 
 func InitPath() {

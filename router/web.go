@@ -56,6 +56,13 @@ func registerRoutes(routeManager *manager.RouteManager) {
 		rg.POST("/room/abandon", middleware.Authentication(global.ROLE_USER), api.AbandonSinglePlayerRoom)
 	})
 
+	routeManager.RegisterTeamRoomRoutes(func(rg *gin.RouterGroup) {
+		rg.POST("/room", middleware.Authentication(global.ROLE_USER), api.CreateTeamRoom)
+		rg.GET("/room", api.GetTeamRoomInfo)
+		rg.GET("/rooms", api.ListTeamRooms)
+		rg.GET("/modes", api.ListTeamRoomModes)
+	})
+
 	routeManager.RegisterLoginRoutes(func(rg *gin.RouterGroup) {
 		rg.POST("/send-code", middleware.Limiter(rate.Every(time.Minute), 4), api.SendCode)
 		rg.POST("/register", middleware.Limiter(rate.Every(time.Minute), 5), api.Register)

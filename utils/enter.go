@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"tgwp/log/zlog"
 	"time"
 )
@@ -29,7 +30,8 @@ func GetRootPath(myPath string) string {
 	rootPath := filepath.Dir(exePath)
 
 	// 检查是否在临时目录运行 (go run)
-	if filepath.Base(rootPath) == "exe" || filepath.Base(rootPath) == "main" {
+	// 包含 go-build 通常意味着是在 go run 的临时构建目录中
+	if filepath.Base(rootPath) == "exe" || filepath.Base(rootPath) == "main" || strings.Contains(rootPath, "go-build") {
 		wd, _ := os.Getwd()
 		return filepath.Join(wd, myPath)
 	}
