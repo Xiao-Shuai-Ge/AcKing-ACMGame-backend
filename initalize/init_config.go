@@ -2,12 +2,14 @@ package initalize
 
 import (
 	"fmt"
-	"github.com/fsnotify/fsnotify"
-	"github.com/spf13/viper"
-	"time"
+	"path/filepath"
 	"tgwp/cmd/flags"
 	"tgwp/configs"
 	"tgwp/global"
+	"time"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/spf13/viper"
 )
 
 // TODO 可以添加环境变量 环境变量没有加在上面 单纯觉得有点用不到
@@ -17,8 +19,13 @@ func InitConfig() {
 	time.Local = cstZone
 
 	configPath := flags.FlagOptions.File
-	if configPath == "" || configPath == "config.yaml" {
-		configPath = global.Path + global.DEFAULT_CONFIG_FILE_PATH
+	if configPath == "" {
+		configPath = "config.yaml"
+	}
+
+	// 如果不是绝对路径，则尝试相对于 global.Path 查找
+	if !filepath.IsAbs(configPath) {
+		configPath = filepath.Join(global.Path, configPath)
 	}
 	fmt.Printf("配置文件路径为 %s\n", configPath)
 	// 初始化配置文件

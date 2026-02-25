@@ -23,3 +23,6 @@ go.work.sum
 config.yaml
 # env file
 .env
+
+# linux 可执行文件
+tgwp-linux-amd64

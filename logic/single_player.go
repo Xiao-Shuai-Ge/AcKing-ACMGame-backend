@@ -51,7 +51,7 @@ func (l *SinglePlayerLogic) CreateRoom(ctx context.Context, userID int64) (resp 
 		return resp, response.ErrResp(err, response.DATABASE_ERROR)
 	}
 	rating := user.Rating
-	if rating <= 0 {
+	if rating <= 800 {
 		rating = 800
 	}
 	minDifficulty := rating - 150

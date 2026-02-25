@@ -3,26 +3,37 @@ package utils
 import (
 	"encoding/json"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"tgwp/log/zlog"
 	"time"
 )
 
 /*
-GetRootPath 搜索项目的文件根目录, 并和 myPath 拼接起来
+GetRootPath 获取项目根目录。
+优先尝试获取当前可执行文件所在的目录，如果失败则返回当前工作目录。
 */
 func GetRootPath(myPath string) string {
-	_, fileName, _, ok := runtime.Caller(0)
-	if !ok {
-		panic("Something wrong with getting root path")
-	}
-	absPath, err := filepath.Abs(fileName)
-	rootPath := filepath.Dir(filepath.Dir(absPath))
+	// 获取当前可执行文件的路径
+	exePath, err := os.Executable()
 	if err != nil {
-		panic(any(err))
+		// 如果获取失败，回退到当前工作目录
+		wd, _ := os.Getwd()
+		return filepath.Join(wd, myPath)
 	}
+
+	// 对于 go run 运行的情况，可执行文件在临时目录，
+	// 此时可以尝试使用工作目录，或者保留 runtime.Caller 作为开发环境的兜底。
+	// 但为了部署稳定，通常建议部署时配置文件放在二进制同级目录。
+	rootPath := filepath.Dir(exePath)
+
+	// 检查是否在临时目录运行 (go run)
+	if filepath.Base(rootPath) == "exe" || filepath.Base(rootPath) == "main" {
+		wd, _ := os.Getwd()
+		return filepath.Join(wd, myPath)
+	}
+
 	return filepath.Join(rootPath, myPath)
 }
 
