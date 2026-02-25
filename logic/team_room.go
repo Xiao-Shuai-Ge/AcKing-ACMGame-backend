@@ -279,6 +279,7 @@ func buildTeamRoomInfo(room model.TeamRoom) types.TeamRoomInfo {
 	problems := parseTeamRoomProblems(room.ProblemList)
 	status := parseTeamRoomProblemStatus(room.ProblemStatus)
 	players := parseTeamRoomPlayers(room.PlayerList)
+	submissions := parseTeamRoomSubmissions(room.SubmissionRecords)
 	extra := parseTeamRoomExtra(room.ExtraInfo)
 	problemMap := make(map[string]teamRoomProblemStatus, len(status))
 	for _, item := range status {
@@ -305,16 +306,27 @@ func buildTeamRoomInfo(room model.TeamRoom) types.TeamRoomInfo {
 			JoinAt:   p.JoinAt,
 		})
 	}
+	submissionInfos := make([]types.TeamRoomSubmissionInfo, 0, len(submissions))
+	for _, s := range submissions {
+		submissionInfos = append(submissionInfos, types.TeamRoomSubmissionInfo{
+			SubmissionID: s.SubmissionID,
+			ProblemID:    s.ProblemID,
+			UserID:       s.UserID,
+			Verdict:      s.Verdict,
+			SubmitTime:   s.SubmitTime,
+		})
+	}
 	return types.TeamRoomInfo{
-		RoomID:    room.ID,
-		Mode:      room.Mode,
-		Status:    room.Status,
-		CreatedAt: room.CreatedAt,
-		EndTime:   room.EndTime,
-		Players:   playerInfos,
-		Problems:  problemInfos,
-		Score:     extra.Score,
-		Duration:  extra.DurationSeconds,
+		RoomID:      room.ID,
+		Mode:        room.Mode,
+		Status:      room.Status,
+		CreatedAt:   room.CreatedAt,
+		EndTime:     room.EndTime,
+		Players:     playerInfos,
+		Problems:    problemInfos,
+		Submissions: submissionInfos,
+		Score:       extra.Score,
+		Duration:    extra.DurationSeconds,
 	}
 }
 
@@ -422,7 +434,7 @@ var teamRoomModeConfigs = map[string]teamRoomModeConfig{
 	},
 	"div3-plus": {
 		Mode:     "div3-plus",
-		Duration: 3 * time.Hour,
+		Duration: 3 * time.Minute,
 		Problems: []int{800, 800, 900, 900, 1000, 1100, 1100, 1200, 1300, 1400, 1500, 1600, 1800, 1900, 2100},
 	},
 }

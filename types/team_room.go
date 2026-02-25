@@ -50,15 +50,16 @@ type TeamRoomListItem struct {
 }
 
 type TeamRoomInfo struct {
-	RoomID    int64                 `json:"room_id,string"`
-	Mode      string                `json:"mode"`
-	Status    int8                  `json:"status"`
-	CreatedAt time.Time             `json:"created_at"`
-	EndTime   int64                 `json:"end_time"`
-	Players   []TeamRoomPlayerInfo  `json:"players"`
-	Problems  []TeamRoomProblemInfo `json:"problems"`
-	Score     int64                 `json:"score"`
-	Duration  int64                 `json:"duration"`
+	RoomID      int64                    `json:"room_id,string"`
+	Mode        string                   `json:"mode"`
+	Status      int8                     `json:"status"`
+	CreatedAt   time.Time                `json:"created_at"`
+	EndTime     int64                    `json:"end_time"`
+	Players     []TeamRoomPlayerInfo     `json:"players"`
+	Problems    []TeamRoomProblemInfo    `json:"problems"`
+	Submissions []TeamRoomSubmissionInfo `json:"submissions"`
+	Score       int64                    `json:"score"`
+	Duration    int64                    `json:"duration"`
 }
 
 type TeamRoomPlayerInfo struct {
@@ -75,6 +76,14 @@ type TeamRoomProblemInfo struct {
 	SolvedBy   int64  `json:"solved_by,string"`
 	Penalty    int    `json:"penalty"`
 	SolvedAt   int64  `json:"solved_at"`
+}
+
+type TeamRoomSubmissionInfo struct {
+	SubmissionID int64  `json:"submission_id,string"`
+	ProblemID    string `json:"problem_id"`
+	UserID       int64  `json:"user_id,string"`
+	Verdict      string `json:"verdict"`
+	SubmitTime   int64  `json:"submit_time"`
 }
 
 type TeamRoomWsJoinReq struct {
