@@ -7,6 +7,7 @@ func MigrateTables(db *gorm.DB) error {
 		&User{},
 		&CodeforcesProblem{},
 		&SinglePlayerRoom{},
+		&TeamRoom{},
 	); err != nil {
 		return err
 	}
