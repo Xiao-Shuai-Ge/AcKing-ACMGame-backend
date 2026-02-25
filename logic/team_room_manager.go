@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"sync"
 	"time"
 
@@ -184,7 +185,7 @@ func (w *teamRoomWorker) handleSubmission(userID int64, submission CfSubmission)
 		Message: response.SUCCESS.Msg,
 		Data: map[string]interface{}{
 			"room":         buildTeamRoomInfo(w.room),
-			"user_id":      userID,
+			"user_id":      strconv.FormatInt(userID, 10),
 			"problem_id":   submission.ProblemID,
 			"last_verdict": submission.Verdict,
 		},

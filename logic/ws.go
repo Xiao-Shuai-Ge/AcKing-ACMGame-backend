@@ -6,12 +6,15 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 
+	"tgwp/global"
 	"tgwp/log/zlog"
+	"tgwp/repo"
 	"tgwp/response"
 	"tgwp/types"
 )
@@ -75,6 +78,7 @@ func NewWsHub() *WsHub {
 	hub.RegisterHandler("ping", hub.handlePing)
 	hub.RegisterHandler("team_room_join", hub.handleTeamRoomJoin)
 	hub.RegisterHandler("team_room_leave", hub.handleTeamRoomLeave)
+	hub.RegisterHandler("team_room_chat", hub.handleTeamRoomChat)
 	return hub
 }
 
@@ -309,7 +313,7 @@ func (h *WsHub) handleTeamRoomJoin(ctx *WsContext, data json.RawMessage) error {
 		Data: map[string]interface{}{
 			"room":    roomInfo,
 			"action":  "join",
-			"user_id": ctx.UserID,
+			"user_id": strconv.FormatInt(ctx.UserID, 10),
 		},
 	})
 	return nil
@@ -339,10 +343,47 @@ func (h *WsHub) handleTeamRoomLeave(ctx *WsContext, data json.RawMessage) error 
 		Data: map[string]interface{}{
 			"room":    roomInfo,
 			"action":  "leave",
-			"user_id": ctx.UserID,
+			"user_id": strconv.FormatInt(ctx.UserID, 10),
 		},
 	})
 	h.UnbindRoom(ctx.Conn, roomID)
+	return nil
+}
+
+func (h *WsHub) handleTeamRoomChat(ctx *WsContext, data json.RawMessage) error {
+	var req types.TeamRoomWsChatReq
+	if err := json.Unmarshal(data, &req); err != nil {
+		return errors.New("param blank")
+	}
+	content := strings.TrimSpace(req.Content)
+	if content == "" {
+		return errors.New("param blank")
+	}
+	roomIDStr := req.RoomID
+	if roomIDStr == "" && ctx.RootID > 0 {
+		roomIDStr = strconv.FormatInt(ctx.RootID, 10)
+	}
+	roomID, err := parseTeamRoomID(roomIDStr)
+	if err != nil {
+		return errors.New("param blank")
+	}
+	user, err := repo.NewUserRepo(global.DB).GetByID(ctx.UserID)
+	if err != nil {
+		return response.ErrResp(err, response.MEMBER_NOT_EXIST)
+	}
+	h.BindRoom(ctx.Conn, roomID)
+	h.SendToRoom(roomID, types.WsResponse{
+		Type:    "team_room_chat",
+		Code:    response.SUCCESS.Code,
+		Message: response.SUCCESS.Msg,
+		Data: map[string]interface{}{
+			"room_id":  roomID,
+			"user_id":  strconv.FormatInt(user.ID, 10),
+			"username": user.Username,
+			"content":  content,
+			"ts":       time.Now().Unix(),
+		},
+	})
 	return nil
 }
 
@@ -359,7 +400,7 @@ func (h *WsHub) autoJoinTeamRoom(ctx context.Context, conn *websocket.Conn, user
 		Data: map[string]interface{}{
 			"room":    roomInfo,
 			"action":  "join",
-			"user_id": userID,
+			"user_id": strconv.FormatInt(userID, 10),
 		},
 	})
 	return nil
@@ -378,7 +419,7 @@ func (h *WsHub) autoLeaveTeamRoom(ctx context.Context, conn *websocket.Conn, use
 		Data: map[string]interface{}{
 			"room":    roomInfo,
 			"action":  "leave",
-			"user_id": userID,
+			"user_id": strconv.FormatInt(userID, 10),
 		},
 	})
 	return nil

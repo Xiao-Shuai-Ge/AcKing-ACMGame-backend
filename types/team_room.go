@@ -84,3 +84,8 @@ type TeamRoomWsJoinReq struct {
 type TeamRoomWsLeaveReq struct {
 	RoomID string `json:"room_id"`
 }
+
+type TeamRoomWsChatReq struct {
+	RoomID  string `json:"room_id"`
+	Content string `json:"content"`
+}
